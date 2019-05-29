@@ -187,7 +187,16 @@ def load_im_hdf5(filename):
     fovmuas = DX / dsource * lunit * 2.06265e11
     psize_x = RADPERUAS * fovmuas / nx
 
-    return ehtim.image.Image(unpoldat.T, psize_x, ra, dec, rf=rf, source=src, polrep='stokes', pol_prim='I', time=time)
+    Iim = poldat[:,:,0]
+    Qim = poldat[:,:,1]
+    Uim = poldat[:,:,2]
+    Vim = poldat[:,:,3]
+
+    outim = ehtim.image.Image(Iim, psize_x, ra, dec, rf=rf, source=src, polrep='stokes', pol_prim='I', time=time)
+    outim.add_qu(Qim, Uim)
+    outim.add_v(Vim)
+
+    return outim
 
 def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT, 
                  punit="deg", polrep='stokes', pol_prim=None, zero_pol=True):
