@@ -503,6 +503,59 @@ class Image(object):
 
         return im
 
+    # TODO -- major nuances here depending on rotation and what we mean by "centered"...
+    def center_squared(self):
+
+        """Roll the image until it's centered
+
+            Args:
+
+            Returns:
+                (Image): image translated to center the ring around 0,0
+        """
+
+        im = self.copy()
+        npix = int(np.sqrt(im.ivec.shape[0]))
+        im2 = self.ivec.reshape(npix,npix)
+
+        # find indices corresponding to brightest pixels along cardinal slices
+        cpx = npix//2
+        xti = (cpx+np.argmax(im2[cpx:,cpx-1])+cpx+np.argmax(im2[cpx:,cpx]))/2.
+        xbi = (np.argmax(im2[:cpx,cpx-1])+np.argmax(im2[:cpx,cpx]))/2.
+        yti = (cpx+np.argmax(im2[cpx-1,cpx:])+cpx+np.argmax(im2[cpx,cpx:]))/2.
+        ybi = (np.argmax(im2[cpx-1,:cpx])+np.argmax(im2[cpx,:cpx]))/2.
+
+        dxi = cpx-(xti+xbi)/2
+        dyi = cpx-(yti+ybi)/2
+
+        # plotting utilties
+        vmax = im2.max() * 2.
+        if False:
+            im2[cpx+np.argmax(im2[cpx:,cpx-1]),cpx-1] = vmax
+            im2[cpx+np.argmax(im2[cpx:,cpx]),cpx] = vmax
+        if False:
+            im2[np.argmax(im2[:cpx,cpx-1]),cpx-1] = vmax
+            im2[np.argmax(im2[:cpx,cpx]),cpx] = vmax
+        if False:
+            im2[cpx-1,cpx+np.argmax(im2[cpx-1,cpx:])] = vmax
+            im2[cpx,cpx+np.argmax(im2[cpx,cpx:])] = vmax
+        if False:
+            im2[cpx-1,np.argmax(im2[cpx-1,:cpx])] = vmax
+            im2[cpx,np.argmax(im2[cpx,:cpx])] = vmax
+
+        offx = 0.
+        offy = 0.
+
+        if np.abs(dxi) > np.abs(dyi):
+            im.ivec = np.roll(im2,int(dxi),axis=0).flatten()
+            offx = dxi*self.fovx()/npix
+        else:
+            im.ivec = np.roll(im2,int(dyi),axis=1).flatten()
+            offy = dyi*self.fovy()/npix
+
+        return im, offx, offy
+
+
     def orth_chi(self):
 
         """Rotate the EVPA 90 degrees
@@ -3069,7 +3122,7 @@ def load_image(image, display=False, aipscc=False):
       elif image.endswith('.h5'):
         im = ehtim.io.load.load_im_hdf5(image)
       else:
-        print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
+        print("Image format is not recognized. Was expecting .fits, .txt, .h5, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
         return False
 
 
@@ -3077,7 +3130,7 @@ def load_image(image, display=False, aipscc=False):
       im = image
 
     else:
-      print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
+      print("Image format is not recognized. Was expecting .fits, .txt, .h5, or Image. Got {0}. Returning False.".format(type(image)))
       return False
 
     if display:
