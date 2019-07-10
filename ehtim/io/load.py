@@ -168,6 +168,10 @@ def load_im_hdf5(filename):
     poldat = np.copy(hfp['pol'])[:,:,:4]            # NX,NY,{I,Q,U,V}
     hfp.close()
 
+    # Correct image orientation
+    unpoldat = np.flip(unpoldat.transpose((1,0)),axis=0)
+    poldat = np.flip(poldat.transpose((1,0,2)),axis=0)
+
     # Make a guess at the source based on distance and optionally fall back on mass
     src = SOURCE_DEFAULT
     if dsource > 4.e25 and dsource < 6.2e25: src = "M87"
